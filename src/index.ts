@@ -53,11 +53,31 @@ app.post('/v1/audit',
     
     // Perform simulated audit logic
     const vulnerabilities = [];
-    if (code.includes('get_caller_address()') && !code.includes('assert')) {
+    
+    // Rule: Access Control
+    if (code.includes('get_caller_address()') && !code.includes('assert') && !code.includes('check_')) {
       vulnerabilities.push({
         type: "Access Control",
         severity: "High",
-        detail: "Caller address is used without accompanying assertions."
+        detail: "Caller address is used without accompanying assertions or validation functions."
+      });
+    }
+
+    // Rule: Unprotected Upgrade
+    if (code.includes('replace_class_syscall') && !code.includes('assert_only_owner') && !code.includes('only_upgrade_governor')) {
+      vulnerabilities.push({
+        type: "Unprotected Upgrade",
+        severity: "Critical",
+        detail: "Contract uses replace_class_syscall without a visible ownership/governance check."
+      });
+    }
+
+    // Rule: Missing Reentrancy Protection
+    if (code.includes('call_contract_syscall') && !code.includes('ReentrancyGuard')) {
+      vulnerabilities.push({
+        type: "Reentrancy Risk",
+        severity: "Medium",
+        detail: "External call detected without visible ReentrancyGuard component."
       });
     }
 
